@@ -8,7 +8,8 @@ This directory contains bash scripts with examples of how github uses cases for 
 
 If you're a Windows 10 User, take a look at [this post](https://msdn.microsoft.com/en-us/commandline/wsl/about).
 
-To obtain the graph of the commits history use:
+* All examples require a target directory where it creates a kiwi dir. Make sure the directory is not already there.
+* To obtain the graph of the commits history use:
 
 ```
 git log --oneline --parents --decorate --all --topo-order --graph
