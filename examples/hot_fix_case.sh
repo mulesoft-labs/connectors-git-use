@@ -35,10 +35,18 @@ git add .
 git commit -m 'Commit 6 in hotfix/SCC2'
 git checkout master-3.5.x
 git merge --no-ff hotfix/SCC2 -m 'Merge from hotfix/SCC2 to master-3.5.x'
-git checkout -b release/3.5.1 master-3.5.x
-echo "7" >> test.txt
-git add .
-git commit -m 'Commit 7 in release/3.5.1'
-git checkout master-3.5.x
-git merge --no-ff hotfix/SCC2 -m 'Merge from release/3.5.1 to master-3.5.x'
-git tag -a -m "Version 4.5.1 release" kiwi/3.5.1
+echo "Edit the file and fix conflicts and press Y/y to continue"
+read -n 1 -p "Input Selection:" mainmenuinput
+if [ "$mainmenuinput" = "y" ] || [ "$mainmenuinput" = "Y" ]; then
+	git add test.txt
+	git commit -m "Merge from hotfix/SCC2 to master-3.5.x' -- Resolved conflicts"
+	git checkout -b release/3.5.1 master-3.5.x
+	echo "7" >> test.txt
+	git add test.txt
+	git commit -m 'Commit 7 in release/3.5.1'
+	git checkout master-3.5.x
+	git merge --no-ff release/3.5.1 -m 'Merge from release/3.5.1 to master-3.5.x'
+	git tag -a -m "Version 4.5.1 release" kiwi/3.5.1
+else
+	echo "Process interrupted"
+fi
