@@ -1,52 +1,128 @@
+create_commit() {
+	local content=$1
+	local prefix=$2
+	local text=$3
+	echo $content >> test.txt
+	git add test.txt
+	git commit -m "Commit $prefix | $content $text"
+} 
+
+
+check_arguments() {
+	if [ -z "$1" ]
+  	then
+    	echo "No argument supplied - target directory (different of .) expected"
+    	exit 1
+	fi
+}
+
+init (){
+	mkdir $1/kiwi
+	cp -r hot_fix_case_mmerges $1/kiwi
+	cd $1/kiwi
+	git init
+}
+
+tag () {
+	local comment=$1
+	local tag_name=$2
+	git tag -a -m "$comment" "$tag_name"
+}
+
+check_out_new() {
+	local branch=$1
+	git checkout -b $branch
+}
+
+check_out_new_from_tag() {
+	local branch=$1
+	local tag=$2
+	git checkout -b $branch $tag
+}
+
+check_out() {
+	local branch=$1
+	git checkout $branch
+}
+
+merge() {
+	local branch_orign=$1
+	local target_branch=$2
+	check_out $target_branch
+	git merge --no-ff $branch_orign -m "Merge from $branch_orign to $target_branch"
+}
+
+
+manual_merge(){
+	local branch_orign=$1
+	local target_branch=$2
+	local merged_file=$3
+	check_out $target_branch
+	cp $merged_file test.txt
+	git add test.txt
+	git commit -m "Merge from $branch_orign to $target_branch -- Resolved conflicts"
+}
+
+
+add_features() {
+	check_out "develop"
+	create_commit "dev 0" "SCC21" "to simulate a feature merge"
+}
+
+hot_fixes() {
+	check_out_new_from_tag "master-3.5.x" "kiwi/3.5.0"
+	
+	#### SCC1
+	check_out_new_from_tag "hotfix/SCC1" "kiwi/3.5.0"
+	create_commit "3" "SCC1" "in hotfix/SCC1"
+	create_commit "4" "SCC1" "in hotfix/SCC1"
+	
+	#### Finish SCC1
+	merge "hotfix/SCC1" "master-3.5.x"
+	merge "hotfix/SCC1" "develop"
+	manual_merge "hotfix/SCC1" "develop" "hot_fix_case_mmerges/merge_scc1_dev.txt"
+
+	
+	#### SCC2
+	check_out_new_from_tag "hotfix/SCC2" "kiwi/3.5.0"
+	create_commit "5" "SCC2" "in hotfix/SCC2"
+	create_commit "6" "SCC2" "in hotfix/SCC2"
+
+	#### Finish SCC2
+	merge "hotfix/SCC2" "master-3.5.x"
+	manual_merge "hotfix/SCC2" "master-3.5.x" "hot_fix_case_mmerges/merge_scc2_master_3_5_x.txt"
+	merge "hotfix/SCC2" "develop"
+	manual_merge "hotfix/SCC2" "develop" "hot_fix_case_mmerges/merge_scc2_dev.txt"
+
+
+	#### Release Hot Fixes for version 3.5.1
+	check_out_new_from_tag "release/3.5.1" "master-3.5.x"
+	create_commit "7" "SCC7" "in release/3.5.1"
+
+	#### Finish release
+	merge "release/3.5.1" "master-3.5.x"
+	merge "release/3.5.1" "develop"
+	manual_merge "release/3.5.1" "develop" "hot_fix_case_mmerges/merge_release_3_5_1_develop.txt"
+	
+	check_out "master-3.5.x"
+	tag "Version 3.5.1 release" "kiwi/3.5.1"
+}
+
+
+
 # Exmple of a complex case for working with hotfixes
 # repo name: kiwi
-if [ -z "$1" ]
-  then
-    echo "No argument supplied - target directory (different of .) expected"
-    exit 1
-fi
-mkdir $1/kiwi
-cd $1/kiwi
-git init
-echo "1" >> test.txt
-git add .
-git commit -m 'Commit 1 in master to simulate merge'
-git tag -a -m "Version 3.1.0 release" kiwi/3.5.0
-echo "2" >> test.txt
-git add .
-git commit -m 'Commit 2 in master to simulate merge'
-git tag -a -m "Version 4.1.0 release" kiwi/4.0.0
-git checkout -b master-3.5.x kiwi/3.5.0
-git checkout -b hotfix/SCC1 kiwi/3.5.0
-echo "3" >> test.txt
-git add .
-git commit -m 'Commit 3 in hotfix/SCC1'
-echo "4" >> test.txt
-git add .
-git commit -m 'Commit 4 in hotfix/SCC1'
-git checkout master-3.5.x
-git merge --no-ff hotfix/SCC1 -m 'Merge from hotfix/SCC1 to master-3.5.x'
-git checkout -b hotfix/SCC2 kiwi/3.5.0
-echo "5" >> test.txt
-git add .
-git commit -m 'Commit 5 in hotfix/SCC2'
-echo "6" >> test.txt
-git add .
-git commit -m 'Commit 6 in hotfix/SCC2'
-git checkout master-3.5.x
-git merge --no-ff hotfix/SCC2 -m 'Merge from hotfix/SCC2 to master-3.5.x'
-echo "Edit the file and fix conflicts and press Y/y to continue"
-read -n 1 -p "Input Selection:" mainmenuinput
-if [ "$mainmenuinput" = "y" ] || [ "$mainmenuinput" = "Y" ]; then
-	git add test.txt
-	git commit -m "Merge from hotfix/SCC2 to master-3.5.x' -- Resolved conflicts"
-	git checkout -b release/3.5.1 master-3.5.x
-	echo "7" >> test.txt
-	git add test.txt
-	git commit -m 'Commit 7 in release/3.5.1'
-	git checkout master-3.5.x
-	git merge --no-ff release/3.5.1 -m 'Merge from release/3.5.1 to master-3.5.x'
-	git tag -a -m "Version 4.5.1 release" kiwi/3.5.1
-else
-	echo "Process interrupted"
-fi
+check_arguments $1
+init $1
+create_commit "0" "SCC0" "Initial commit"
+create_commit "1" "SCC1" "in master to simulate merge"
+tag "Version 3.1.0 release" "kiwi/3.5.0"
+create_commit "2" "SCC2" "in master to simulate merge'"
+tag "Version 4.1.0 release" "kiwi/4.0.0"
+
+#### Create develop in sync with kiwi/4.0.0
+check_out_new "develop"
+
+add_features
+
+hot_fixes

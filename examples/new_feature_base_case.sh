@@ -18,6 +18,7 @@ check_arguments() {
 
 init (){
 	mkdir $1/kiwi
+	cp -r hot_fix_case_mmerges $1/kiwi
 	cd $1/kiwi
 	git init
 }
@@ -47,24 +48,23 @@ check_out() {
 merge() {
 	local branch_orign=$1
 	local target_branch=$2
-	git merge --no-ff $branch_orign -m "Merge from #branch_orign to $target_branch"
+	check_out $target_branch
+	git merge --no-ff $branch_orign -m "Merge from $branch_orign to $target_branch"
 }
 
 check_arguments $1
 init $1
-create_commit '1' '' 'in master'
+create_commit '1' '' 'Initial Commit'
 check_out_new 'develop'
-create_commit '2' '' 'in develop'
+create_commit '2' 'SCC0' 'in develop'
 check_out_new 'feature/SCC1'
 create_commit '3' 'SCC1' 'feature/SCC1'
-check_out develop
 merge "feature/SCC1" "develop"
 check_out_new 'release/1.0.0'
-create_commit '4' '' 'in release/1.0.0'
-check_out master
+create_commit '4' 'SCC2' 'in release/1.0.0'
 merge "release/1.0.0" "master"
+check_out "master"
 tag "Version 1.0.0 release" "kiwi/1.0.0"
-check_out develop
 merge "release/1.0.0" "develop"
 
 
